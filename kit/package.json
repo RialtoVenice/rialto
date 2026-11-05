@@ -1,0 +1,53 @@
+{
+  "name": "rialto-kit",
+  "version": "0.11.0",
+  "description": "Venice AI agent kit for Robinhood Chain: wallet-native CLI, MCP server, USDG x402 payments, USDG to Venice credit bridge and a budgeted reference agent.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "rialto": "bin/rialto.js"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "bin",
+    "dist",
+    "SKILL.md",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node --test dist/tests/",
+    "prepack": "npm run build"
+  },
+  "keywords": [
+    "venice",
+    "venice-ai",
+    "robinhood-chain",
+    "usdg",
+    "x402",
+    "mcp",
+    "agent",
+    "viem",
+    "solana",
+    "usdc"
+  ],
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "@solana/spl-token": "^0.4.15",
+    "@solana/web3.js": "^1.99.0",
+    "bs58": "^6.0.0",
+    "commander": "^15.0.0",
+    "viem": "^2.56.3",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.16.5",
+    "typescript": "^5.8.3"
+  }
+}

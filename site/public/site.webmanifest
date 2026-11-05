@@ -1,0 +1,13 @@
+{
+  "name": "Rialto",
+  "short_name": "Rialto",
+  "description": "Venice AI agent kit for Robinhood Chain",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F7F7F5",
+  "theme_color": "#F7F7F5",
+  "icons": [
+    { "src": "/assets/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/assets/logo-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
