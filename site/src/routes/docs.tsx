@@ -13,7 +13,7 @@ export const Route = createFileRoute("/docs")({
   component: Docs,
 });
 
-const TARBALL = `${PRIMARY_ORIGIN}/downloads/rialto-kit-0.11.0.tgz`;
+const TARBALL = `${PRIMARY_ORIGIN}/downloads/rialto-kit-0.12.0.tgz`;
 
 const COMMANDS: [string, string][] = [
   ["rialto sol init", "Create the Solana keypair (or show it). The secret stays in ~/.rialto/config.json, mode 600."],
@@ -31,6 +31,7 @@ const COMMANDS: [string, string][] = [
   ["rialto sol burn <amount> --yes", "Burn Rialto from this wallet. The supply shrinks for good. Irreversible."],
   ["rialto sol watch [-e 15] [--json] [--once]", "Follow Solana live: slot, this wallet's balances, the Rialto trade tape."],
   ["rialto chat \"<prompt>\" [--model m] [--web]", "One Venice completion from the wallet's credit. --web adds private web search."],
+  ["rialto sol receipts [-n 20] [--since <date>] [--json]", "Every payment this kit signed, x402 on Solana and Venice top-ups: totals, by host, the last N, with transaction signatures. Read from ~/.rialto/receipts.jsonl, costs nothing."],
   ["rialto agent \"<goal>\" [-b 0.25] [--cap sol_pay=0.05]", "The budgeted reference agent: plans, calls tools, stops at the budget. --cap tool=usd caps one tool for the run; repeat it per tool."],
   ["rialto venice balance | ledger | models | search \"<q>\"", "Venice account, history, models, private web search."],
   ["rialto mcp", "Start the MCP server on stdio for Claude Code, Cursor, Codex or any MCP client."],
@@ -123,6 +124,7 @@ function Docs() {
           <li><code className="font-mono text-ink">payAllowlist</code>: hosts the payer may pay. Empty means any HTTPS host.</li>
           <li><code className="font-mono text-ink">agentBudgetUsd</code>: hard budget for one agent run, inference plus payments (default 1).</li>
           <li><code className="font-mono text-ink">toolCaps</code>: one cap per tool inside a run. sol_pay is refused once its cap is spent, and the remaining cap becomes the ceiling of the next payment; venice stops inference at its cap. Set per run with <code className="font-mono text-ink">--cap sol_pay=0.05 --cap venice=0.03</code>, or once with <code className="font-mono text-ink">rialto config toolCaps sol_pay=0.05,venice=0.03</code>.</li>
+          <li><code className="font-mono text-ink">receipts.jsonl</code>: every payment the kit signs is appended to a local ledger by the payer itself, with time, URL, amount, status, signature and the ceiling that applied. <code className="font-mono text-ink">rialto sol receipts</code>, MCP and agent tool <code className="font-mono text-ink">sol_receipts</code> read it.</li>
           <li>Every irreversible command (send, burn) refuses to run without <code className="font-mono text-ink">--yes</code>.</li>
           <li>Environment: <code className="font-mono text-ink">SOLANA_RPC_URL</code>, <code className="font-mono text-ink">RIALTO_SOLANA_MINT</code>, <code className="font-mono text-ink">SOLANA_SECRET_KEY</code> (base58), <code className="font-mono text-ink">VENICE_API_KEY</code> for key mode.</li>
         </ul>

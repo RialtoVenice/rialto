@@ -13,7 +13,7 @@ Venice AI agent kit on Solana, and the site that serves it. One wallet that pays
 ## Quick start
 
 ```bash
-npm i -g https://rialto.casa/downloads/rialto-kit-0.11.0.tgz
+npm i -g https://rialto.casa/downloads/rialto-kit-0.12.0.tgz
 rialto sol init
 rialto sol status
 rialto agent "What is the Rialto supply and who are the top holders?" -b 0.10 --cap sol_pay=0.02

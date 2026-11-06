@@ -10,7 +10,7 @@ import { Ticker } from "../components/ticker";
 import { SolRankCard } from "../components/sol-rank-card";
 import { PRIMARY_ORIGIN, SOLANA_CHART, SOLANA_EXPLORER_TOKEN, SOLANA_MINT, X_URL } from "../lib/site";
 
-const tarballUrl = (origin: string) => `${origin}/downloads/rialto-kit-0.11.0.tgz`;
+const tarballUrl = (origin: string) => `${origin}/downloads/rialto-kit-0.12.0.tgz`;
 
 const JSON_LD = JSON.stringify({
   "@context": "https://schema.org",
@@ -364,6 +364,7 @@ function Index() {
           <div className="mx-auto max-w-6xl px-6 py-20">
             <h2 className="text-3xl font-semibold tracking-tight text-ink md:text-4xl">What changed</h2>
             <ul className="mt-10 divide-y divide-line border-y border-line">
+              <Change date="Nov 6, 2026" what="Kit 0.12.0: a local ledger of every payment the kit signs. ~/.rialto/receipts.jsonl gets one line per x402 payment or Venice top-up (time, URL, amount, status, signature, ceiling), written by the payer itself. rialto sol receipts sums it up; the agent and the MCP read it through sol_receipts." />
               <Change date="Nov 4, 2026" what="Kit 0.11.0: per-tool caps for the agent. rialto agent --cap sol_pay=0.05 --cap venice=0.03 gives each tool its own ceiling for the run: a paying tool is refused once its cap is spent and the remaining cap becomes the ceiling of its next payment, venice stops inference at its cap. The run budget now counts payments too. Also in config as toolCaps, and in the MCP rialto_agent tool. The reference agent now runs on the Solana tools (sol_status, sol_token, sol_holders, sol_stock, sol_pay). Mint live: 8h88ucUAF5o6CEr8rphy9rwNPD7gt2qBEmCv81SCpump." />
               <Change date="Nov 3, 2026" what="Rialto moves to Solana. Kit 0.10.0: rialto sol init, status, config, token, holders, burns, trades, stock, send, burn, fund and pay, plus watch. Venice top-ups straight from Solana USDC through Venice's own x402 top-up; x402 payments in USDC with the exact scheme, facilitator-paid fees. Classic Token and Token-2022 mints both work. Local MCP adds the sol_* tools. The new site, this page, is written for Solana; the token section fills in the day the mint goes live." />
             </ul>
@@ -388,7 +389,7 @@ function Index() {
           </div>
           <div className="space-y-2 text-sm">
             <p className="font-mono text-xs uppercase tracking-wider text-ink-2">Downloads</p>
-            <p><DownloadLink href="/downloads/rialto-kit-0.11.0.tgz">rialto-kit-0.11.0.tgz</DownloadLink></p>
+            <p><DownloadLink href="/downloads/rialto-kit-0.12.0.tgz">rialto-kit-0.12.0.tgz</DownloadLink></p>
             <p><DownloadLink href="/downloads/rialto-kit-source.zip">Source, zip</DownloadLink></p>
             <p><DownloadLink href="/downloads/SKILL.md">SKILL.md for agents</DownloadLink></p>
           </div>

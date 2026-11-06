@@ -16,6 +16,7 @@ import { balance as veniceBalance, chat, listModels, transactions, webSearch } f
 import { getAccount } from "./wallet.js";
 import { burnSpl, sendSpl, solBurns, solHolders, solStatus, solStock, solToken, solTrades } from "./solana.js";
 import { payFetchSolana, topUpSolana } from "./solpay.js";
+import { receiptsSummary } from "./receipts.js";
 import { payFetch } from "./x402.js";
 
 function text(v: unknown) {
@@ -105,6 +106,9 @@ export function buildServer(): McpServer {
   );
   server.registerTool("sol_stock", { description: "Tokenized stock on Solana (xStocks: AAPLx, TSLAx, NVDAx...): mint, USD price, liquidity, deepest pool.", inputSchema: { symbol: z.string() } }, async ({ symbol }) =>
     guarded(() => solStock(symbol)),
+  );
+  server.registerTool("sol_receipts", { description: "Every payment this kit signed (x402 on Solana, Venice top-ups): totals, by host, the last N. Read from the local ledger, costs nothing.", inputSchema: { limit: z.number().int().positive().optional(), since: z.string().optional() } }, async ({ limit, since }) =>
+    guarded(async () => receiptsSummary({ limit, since })),
   );
   server.registerTool("sol_pay", { description: "Fetch an HTTPS URL and pay in USDC on Solana if it answers 402 with a Solana x402 option. Respects the per-payment ceiling and the host allowlist. Use dryRun to see the price first.", inputSchema: { url: z.string(), method: z.string().optional(), body: z.string().optional(), dryRun: z.boolean().optional() } }, async ({ url, method, body, dryRun }) =>
     guarded(async () => { const r = await payFetchSolana(url, { method, body, dryRun }); return { status: r.response.status, receipt: r.receipt ?? null, requirement: r.requirement ?? null, body: r.text.slice(0, 4000) }; }),

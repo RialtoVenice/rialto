@@ -12,6 +12,7 @@
 import { resolveConfig } from "./config.js";
 import { solHolders, solStatus, solStock, solToken } from "./solana.js";
 import { payFetchSolana } from "./solpay.js";
+import { receiptsSummary } from "./receipts.js";
 import { chat, balance as veniceBalance, webSearch, type ChatMessage, type ChatTool, type VeniceAuth, veniceAuth } from "./venice.js";
 
 export const AGENT_TOOLS: ChatTool[] = [
@@ -19,6 +20,7 @@ export const AGENT_TOOLS: ChatTool[] = [
   { type: "function", function: { name: "sol_token", description: "An SPL mint on Solana (default: the Rialto mint): supply, decimals, authorities, largest accounts, price and pool.", parameters: { type: "object", properties: { mint: { type: "string" } } } } },
   { type: "function", function: { name: "sol_holders", description: "Holders of an SPL mint on Solana (default: the Rialto mint): count, top holders, concentration.", parameters: { type: "object", properties: { mint: { type: "string" }, top: { type: "number" } } } } },
   { type: "function", function: { name: "sol_stock", description: "Tokenized stock on Solana (xStocks: AAPLx, TSLAx, NVDAx or any ticker): mint, USD price, liquidity, deepest pool.", parameters: { type: "object", properties: { symbol: { type: "string" } }, required: ["symbol"] } } },
+  { type: "function", function: { name: "sol_receipts", description: "Every payment this wallet signed so far (x402 on Solana, Venice top-ups): totals, by host, the last N. Local ledger, free to read.", parameters: { type: "object", properties: { limit: { type: "number" }, since: { type: "string" } } } } },
   { type: "function", function: { name: "sol_pay", description: "Fetch an HTTPS URL and pay in USDC on Solana if it answers 402. Respects the per-payment ceiling, the host allowlist and the per-tool cap.", parameters: { type: "object", properties: { url: { type: "string" }, method: { type: "string" }, body: { type: "string" } }, required: ["url"] } } },
   { type: "function", function: { name: "venice_web_search", description: "Private web search through Venice.", parameters: { type: "object", properties: { query: { type: "string" }, limit: { type: "number" } }, required: ["query"] } } },
 ];
@@ -58,6 +60,8 @@ export async function runTool(name: string, args: Record<string, unknown>, ctx?:
       return solHolders(args.mint ? String(args.mint) : undefined, Number(args.top ?? 10));
     case "sol_stock":
       return solStock(String(args.symbol));
+    case "sol_receipts":
+      return receiptsSummary({ limit: args.limit ? Number(args.limit) : undefined, since: args.since ? String(args.since) : undefined });
     case "sol_pay": {
       // The remaining cap becomes this payment's ceiling, so a single call can never overshoot the cap.
       const remaining = cap !== undefined ? Math.max(0, cap - spent) : undefined;

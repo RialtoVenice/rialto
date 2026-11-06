@@ -9,6 +9,7 @@ import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID, createTransferCheckedInstructi
 import { resolveConfig } from "./config.js";
 import { USDC_MINT, getSolanaKeypair, solanaConnection } from "./solana.js";
 import { parsePaymentRequired, type PaymentReceipt, type PaymentRequirement } from "./x402.js";
+import { recordReceipt, settlementSignature } from "./receipts.js";
 
 export const SOLANA_MAINNET_CAIP2 = "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp";
 const SOLANA_NETWORKS = new Set([SOLANA_MAINNET_CAIP2, "solana", "solana-mainnet"]);
@@ -93,6 +94,7 @@ export async function payFetchSolana(url: string, opts: SolPayOptions = {}): Pro
       settlement = settlementHeader;
     }
   }
+  recordReceipt({ kind: "x402", url, amountUsdc: amount, status: paid.status, signature: settlementSignature(settlement), payTo: req.payTo, network: req.network, cap: ceiling });
   return { response: paid, text, requirement: req, receipt: { url, amountUsdg: amount.toFixed(6), payTo: req.payTo, network: req.network, x402Version: required.x402Version ?? 1, status: paid.status, settlement } };
 }
 
@@ -113,5 +115,7 @@ export async function topUpSolana(amountUsd: number): Promise<{ amountCredited: 
   const res = await fetch(`${VENICE_API}/api/v1/x402/top-up`, { method: "POST", headers: { "PAYMENT-SIGNATURE": header, "X-402-Payment": header } });
   const text = await res.text();
   if (!res.ok) throw new Error(`Venice top-up answered ${res.status}: ${text.slice(0, 300)}`);
-  return (JSON.parse(text) as { data: { amountCredited: number; newBalance: number; paymentId: string } }).data;
+  const data = (JSON.parse(text) as { data: { amountCredited: number; newBalance: number; paymentId: string } }).data;
+  recordReceipt({ kind: "topup", url: `${VENICE_API}/api/v1/x402/top-up`, amountUsdc: amountUsd, status: res.status, signature: null, ref: data.paymentId, payTo: req.payTo, network: req.network, cap: null });
+  return data;
 }

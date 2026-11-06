@@ -18,6 +18,7 @@ import { getAccount } from "./wallet.js";
 import { payFetch } from "./x402.js";
 import { burnSpl, ensureSolanaWallet, getSolanaKeypair, sendSol, sendSpl, solBurns, solHolders, solStatus, solStock, solToken, solTrades, SOLANA_RPC } from "./solana.js";
 import { payFetchSolana, topUpSolana } from "./solpay.js";
+import { receiptsSummary } from "./receipts.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const pkg = JSON.parse(readFileSync(join(here, "..", "package.json"), "utf8")) as { version: string };
@@ -601,6 +602,24 @@ sol
   .action(async (symbol: string) => {
     try {
       out(await solStock(symbol));
+    } catch (e) {
+      fail(e);
+    }
+  });
+sol
+  .command("receipts")
+  .description("Every payment this kit signed (x402 on Solana, Venice top-ups): totals, by host, the last N, from ~/.rialto/receipts.jsonl")
+  .option("-n, --limit <n>", "how many recent payments to list", "20")
+  .option("--since <date>", "only payments at or after this ISO date")
+  .option("--json", "raw JSON")
+  .action((o: { limit: string; since?: string; json?: boolean }) => {
+    try {
+      const s = receiptsSummary({ limit: Number(o.limit), since: o.since });
+      if (o.json) return out(s);
+      console.log(`${s.settled} settled payment${s.settled === 1 ? "" : "s"} (${s.count} recorded), ${s.totalUsdc} USDC total, ${s.todayUsdc} USDC today. Ledger: ${s.path}`);
+      for (const [host, h] of Object.entries(s.byHost).sort((a, b) => b[1].usdc - a[1].usdc)) console.log(`  ${host.padEnd(28)} ${String(h.count).padStart(4)} payment${h.count === 1 ? " " : "s"}  ${h.usdc} USDC`);
+      if (s.last.length) console.log("");
+      for (const r of s.last) console.log(`${r.at.slice(0, 19).replace("T", " ")}  ${r.kind.padEnd(5)} ${String(r.amountUsdc).padStart(10)} USDC  ${r.status < 400 ? "ok " : r.status}  ${r.host}${r.signature ? "  " + r.signature : r.ref ? "  " + r.ref : ""}`);
     } catch (e) {
       fail(e);
     }

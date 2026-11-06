@@ -9,7 +9,7 @@ The name is the bridge. In Venice, the Rialto crosses the Grand Canal. Here it c
 The package is not on npm yet. Install the hosted tarball, or build from this folder.
 
 ```bash
-npm i -g https://rialto.casa/downloads/rialto-kit-0.11.0.tgz
+npm i -g https://rialto.casa/downloads/rialto-kit-0.12.0.tgz
 rialto sol init                  # creates the Solana keypair in ~/.rialto/config.json (mode 600)
 ```
 
@@ -46,6 +46,7 @@ rialto mcp                       # MCP server on stdio for Claude, Cursor, Herme
 | `rialto sol stock <symbol>` | Tokenized stock on Solana (xStocks: AAPLx, TSLAx, NVDAx): mint, USD price, deepest pool. |
 | `rialto sol fund <usd>` | Top up Venice from this wallet's USDC through Venice's Solana x402 lane. No bridge, no SOL fee. |
 | `rialto sol pay <url> [--dry-run] [--max <usd>]` | Fetch a URL and pay in USDC if it answers 402 with a Solana option (x402 exact scheme). |
+| `rialto sol receipts [-n 20] [--since <date>] [--json]` | Every payment this kit signed: totals, by host, the last N, from the local ledger `~/.rialto/receipts.jsonl`. |
 | `rialto sol send <to> <amount> --yes [--sol \| --rialto]` | Send USDC, SOL or Rialto. Irreversible. |
 | `rialto sol burn <amount> --yes` | Burn Rialto (BurnChecked). Irreversible. |
 | `rialto sol watch [--json]` | Follow slot, balances and the Rialto trade tape live. |
@@ -75,6 +76,8 @@ All enforced locally, before any signature:
 | `payAllowlist` | Hosts the payer may pay | `solpay.ts` |
 
 When a tool is refused, the model receives the refusal as a normal tool result. The system prompt tells it not to retry and to finish with what it has.
+
+Every payment the kit signs (x402 on Solana, Venice top-ups) is appended to `~/.rialto/receipts.jsonl` (mode 600) by the payer itself, so the CLI, the MCP server and the agent leave the same trail: time, URL, amount, HTTP status, transaction signature when the facilitator reports one, and the ceiling that applied. `rialto sol receipts` sums it up; the agent and the MCP read it through `sol_receipts`. Nothing is uploaded anywhere.
 
 ## Configuration
 
@@ -108,6 +111,7 @@ Hosted, read-only, no install: `https://rialto.casa/mcp` (Streamable HTTP, state
 |---|---|
 | `solana.ts` | Keypair, balances, mint facts, holders, burns, trades, xStocks, transfers |
 | `solpay.ts` | x402 payer for Solana (`exact` scheme, USDC), ceiling and allowlist, Venice top-up |
+| `receipts.ts` | Local ledger of every payment signed, and its summary |
 | `venice.ts` | `SIGN-IN-WITH-X` auth, chat with tools, balance, ledger, models, web search |
 | `agent.ts` | Budgeted reference agent: Venice function calling, per-tool caps, Solana tools |
 | `mcp.ts` | MCP server (stdio) exposing everything |

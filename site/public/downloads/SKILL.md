@@ -62,6 +62,7 @@ Tools: `rialto_wallet`, `hood_chain_status`, `hood_balances`, `hood_wallet_repor
 - `toolCaps` caps each tool separately inside a run: `sol_pay` is refused once its cap is spent and the remaining cap becomes the ceiling of the next payment, `venice` stops inference at its cap. Set per run with `--cap tool=usd` or once in config.
 - `hood_send_usdg` and `rialto_fund_venice` move real funds. Confirm with the user before calling them.
 - The private key never leaves `~/.rialto/config.json` (mode 600) or `RIALTO_PRIVATE_KEY`.
+- Every payment signed is appended to `~/.rialto/receipts.jsonl`. `rialto sol receipts` / MCP `sol_receipts` / agent tool `sol_receipts` read it. Check it before and after a run that pays.
 
 ## Facts the code relies on (verified 2026-09-09)
 
@@ -99,6 +100,7 @@ rialto compare <a> <b>      # two wallets side by side on the ledger
 rialto export burns --csv   # holders | leaderboard | burns | history as JSON (default) or CSV, -o file
 rialto sol init | status | config mint <addr> | token | holders | burns | trades | send <to> <amount> --yes   # Rialto on Solana
 rialto sol fund 5 | pay <url> | burn <amount> --yes | stock AAPLx | watch   # Venice top-up from Solana USDC, x402 in USDC, burn, xStocks, live
+rialto sol receipts [-n 20] [--since <date>] [--json]   # every payment this kit signed, from ~/.rialto/receipts.jsonl: totals, by host, signatures
 rialto history              # growth day by day since launch, and who holds how much by tier
 rialto vitals               # measured chain vitals: blocks per second, block time, fee of one transfer
 rialto rank [address]       # where a wallet stands: rank, wallet number since launch, days held, never sold, day one, badge
