@@ -1,6 +1,7 @@
 export const PRIMARY_ORIGIN = "https://rialto.casa";
 /** Rialto on X. Replace with the real profile URL once the account exists. */
 export const X_URL = "https://x.com/RialtoVenice";
+export const GITHUB_URL = "https://github.com/RialtoVenice/rialto";
 /** First-era Rialto token contract, kept for the server-side ledger routes; not shown on the site. */
 export const TOKEN_CA = "0xe0fb5d77c627ba9c7950fc0d62d1d96603e7b7c6";
 export const TOKEN_EXPLORER = `https://robinhoodchain.blockscout.com/token/${TOKEN_CA}`;

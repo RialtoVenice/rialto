@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { CopyCommand } from "../components/copy-command";
-import { PRIMARY_ORIGIN, X_URL } from "../lib/site";
+import { GITHUB_URL, PRIMARY_ORIGIN, X_URL } from "../lib/site";
 
 export const Route = createFileRoute("/docs")({
   head: () => ({
@@ -13,7 +13,7 @@ export const Route = createFileRoute("/docs")({
   component: Docs,
 });
 
-const TARBALL = `${PRIMARY_ORIGIN}/downloads/rialto-kit-0.12.0.tgz`;
+const TARBALL = `${PRIMARY_ORIGIN}/downloads/rialto-kit-0.12.1.tgz`;
 
 const COMMANDS: [string, string][] = [
   ["rialto sol init", "Create the Solana keypair (or show it). The secret stays in ~/.rialto/config.json, mode 600."],
@@ -58,6 +58,7 @@ function Docs() {
           <a href="#commands" className="r-underline hover:text-ink">Commands</a>
           <a href="#mcp" className="r-underline hover:text-ink">MCP</a>
           <a href="#guardrails" className="r-underline hover:text-ink">Guardrails</a>
+          <a href={GITHUB_URL} rel="noopener" target="_blank" className="r-underline hover:text-ink">GitHub</a>
           <a href={X_URL} rel="noopener" target="_blank" className="r-underline hover:text-ink">X</a>
         </nav>
       </header>

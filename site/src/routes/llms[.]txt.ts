@@ -19,7 +19,7 @@ export const Route = createFileRoute("/llms.txt")({
           "- Rialto token: a new mint on Solana, published on this site and on X the day it goes live. Set it with `rialto sol config mint <address>`.",
           "",
           "## Local kit",
-          `- Tarball: ${o}/downloads/rialto-kit-0.12.0.tgz (npm i -g, or npx <tarball> sol init). Skill file: ${o}/downloads/SKILL.md. Source: ${o}/downloads/rialto-kit-source.zip.`,
+          `- Tarball: ${o}/downloads/rialto-kit-0.12.1.tgz (npm i -g, or npx <tarball> sol init). Skill file: ${o}/downloads/SKILL.md. Source: ${o}/downloads/rialto-kit-source.zip.`,
           "- Solana commands: sol init, sol status, sol address, sol config mint, sol token, sol holders, sol burns, sol trades, sol stock, sol send, sol burn, sol fund, sol pay, sol watch.",
           "- Payment ledger: rialto sol receipts [-n 20] [--since date] [--json]; every x402 payment and Venice top-up the kit signed, from ~/.rialto/receipts.jsonl. MCP and agent tool: sol_receipts.",
           "- Venice commands: chat, agent [-b usd] [--cap tool=usd ...], venice balance | ledger | models | search. Also: mcp, skill, config (toolCaps).",
@@ -28,6 +28,7 @@ export const Route = createFileRoute("/llms.txt")({
           "",
           "## Pages",
           `- ${o}/ home, ${o}/docs, ${o}/playground`,
+          "- Source (MIT): https://github.com/RialtoVenice/rialto",
           "- X: https://x.com/RialtoVenice",
           "",
         ].join("\n");

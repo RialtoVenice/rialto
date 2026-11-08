@@ -1,6 +1,6 @@
 {
   "name": "rialto-kit",
-  "version": "0.12.0",
+  "version": "0.12.1",
   "description": "Venice AI agent kit for Robinhood Chain: wallet-native CLI, MCP server, USDG x402 payments, USDG to Venice credit bridge and a budgeted reference agent.",
   "license": "MIT",
   "type": "module",

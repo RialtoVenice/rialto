@@ -9,7 +9,7 @@ The name is the bridge. In Venice, the Rialto crosses the Grand Canal. Here it c
 The package is not on npm yet. Install the hosted tarball, or build from this folder.
 
 ```bash
-npm i -g https://rialto.casa/downloads/rialto-kit-0.12.0.tgz
+npm i -g https://rialto.casa/downloads/rialto-kit-0.12.1.tgz
 rialto sol init                  # creates the Solana keypair in ~/.rialto/config.json (mode 600)
 ```
 
@@ -39,7 +39,7 @@ rialto mcp                       # MCP server on stdio for Claude, Cursor, Herme
 | `rialto sol init` | Create or show the Solana keypair. The secret never leaves the config file. |
 | `rialto sol status [address]` | SOL, USDC and Rialto balances, current slot. |
 | `rialto sol config mint <address>` | Set the Rialto mint used by default. |
-| `rialto sol token [mint]` | Mint facts: supply, decimals, mint and freeze authorities, 20 largest accounts with owners, price and pool. |
+| `rialto sol token [mint]` | Mint facts: supply, decimals, mint and freeze authorities, burn since launch (1B created minus supply), 20 largest accounts with owners, price and pool. |
 | `rialto sol holders [mint] -n 20` | Holders: full scan when the RPC allows `getProgramAccounts`, else the 20 largest with `complete: false`. |
 | `rialto sol burns [mint]` | Burn instructions in the mint's recent transactions, with amounts and signatures. |
 | `rialto sol trades [mint]` | Trade tape of the deepest pool: buys, sells, USD size, last hour totals. |

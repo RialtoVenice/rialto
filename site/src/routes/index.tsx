@@ -10,7 +10,7 @@ import { Ticker } from "../components/ticker";
 import { SolRankCard } from "../components/sol-rank-card";
 import { PRIMARY_ORIGIN, SOLANA_CHART, SOLANA_EXPLORER_TOKEN, SOLANA_MINT, X_URL } from "../lib/site";
 
-const tarballUrl = (origin: string) => `${origin}/downloads/rialto-kit-0.12.0.tgz`;
+const tarballUrl = (origin: string) => `${origin}/downloads/rialto-kit-0.12.1.tgz`;
 
 const JSON_LD = JSON.stringify({
   "@context": "https://schema.org",
@@ -142,7 +142,7 @@ function Index() {
             ...(st.volume24hUsd ? [{ k: "24h volume", v: `${fmt(st.volume24hUsd)}` }] : []),
             ...(st.liquidityUsd ? [{ k: "liquidity", v: `${fmt(st.liquidityUsd)}` }] : []),
             ...(sol?.holders?.holders ? [{ k: "holders", v: fmt(sol.holders.holders) }] : []),
-            ...(sol?.burns ? [{ k: "burned", v: `${fmt(sol.burns.burnedTotal)} (${sol.burns.burnedPctOfCurrentSupply ?? 0}%)`, tone: "brick" as const }] : []),
+            ...(sol?.burns ? [{ k: "burned since launch", v: `${fmt(sol.burns.burnedSinceLaunch ?? sol.burns.burnedTotal)} (${sol.burns.burnedPctOfInitial ?? sol.burns.burnedPctOfCurrentSupply ?? 0}%)`, tone: "brick" as const }] : []),
             ...(sol?.trades ? [{ k: "last hour", v: `${sol.trades.lastHour.buys} buys / ${sol.trades.lastHour.sells} sells`, tone: sol.trades.lastHour.buys >= sol.trades.lastHour.sells ? ("up" as const) : ("down" as const) }] : []),
           ]}
           endpoint="/api/sol/ticker"
@@ -286,7 +286,8 @@ function Index() {
                           <p className="font-mono text-xs uppercase tracking-wider text-ink-2">Burn ledger, from the chain</p>
                           {sol?.burns ? (
                             <>
-                              <p className="mt-2 text-3xl font-semibold tracking-tight text-ink">{fmt(sol.burns.burnedTotal)} <span className="text-base font-medium text-ink-2">burned · {sol.burns.burnedPctOfCurrentSupply ?? 0}% of current supply</span></p>
+                              <p className="mt-2 text-3xl font-semibold tracking-tight text-ink">{fmt(sol.burns.burnedSinceLaunch ?? sol.burns.burnedTotal)} <span className="text-base font-medium text-ink-2">burned since launch · {sol.burns.burnedPctOfInitial ?? sol.burns.burnedPctOfCurrentSupply ?? 0}% of the {sol.burns.initialSupply ? fmt(sol.burns.initialSupply) : "current"} created</span></p>
+                              <p className="mt-1 text-xs text-ink-2">Derived from supply: 1,000,000,000 created, mint authority null, so supply only moves down. The list below is what the RPC scan found; the total above does not depend on it.</p>
                               <ul className="mt-4 divide-y divide-line">
                                 {sol.burns.burns.map((b, i) => (
                                   <li key={b.signature} className="grid grid-cols-[auto_1fr_auto_auto] items-baseline gap-4 py-2.5 text-sm"><span className="font-mono text-xs text-ink-2">#{sol.burns!.burns.length - i}</span><span className="font-mono text-ink">{fmt(b.amount)} Rialto</span><span className="text-xs text-ink-2">{b.time ? b.time.slice(0, 16).replace("T", " ") + " UTC" : `slot ${b.slot}`}</span><a className="r-underline font-mono text-xs text-brick" href={b.explorerUrl} target="_blank" rel="noopener">tx</a></li>
@@ -364,6 +365,7 @@ function Index() {
           <div className="mx-auto max-w-6xl px-6 py-20">
             <h2 className="text-3xl font-semibold tracking-tight text-ink md:text-4xl">What changed</h2>
             <ul className="mt-10 divide-y divide-line border-y border-line">
+              <Change date="Nov 8, 2026" what="Burn since launch is now derived from supply, not from a transaction scan: 1,000,000,000 created, mint authority null, so created minus current is the burn, on the ticker, the home page, /api/sol/burns and in kit 0.12.1 (rialto sol token, rialto sol burns). The public RPC can throttle a scan; it cannot throttle a subtraction. Source now linked: github.com/RialtoVenice/rialto." />
               <Change date="Nov 6, 2026" what="Kit 0.12.0: a local ledger of every payment the kit signs. ~/.rialto/receipts.jsonl gets one line per x402 payment or Venice top-up (time, URL, amount, status, signature, ceiling), written by the payer itself. rialto sol receipts sums it up; the agent and the MCP read it through sol_receipts." />
               <Change date="Nov 4, 2026" what="Kit 0.11.0: per-tool caps for the agent. rialto agent --cap sol_pay=0.05 --cap venice=0.03 gives each tool its own ceiling for the run: a paying tool is refused once its cap is spent and the remaining cap becomes the ceiling of its next payment, venice stops inference at its cap. The run budget now counts payments too. Also in config as toolCaps, and in the MCP rialto_agent tool. The reference agent now runs on the Solana tools (sol_status, sol_token, sol_holders, sol_stock, sol_pay). Mint live: 8h88ucUAF5o6CEr8rphy9rwNPD7gt2qBEmCv81SCpump." />
               <Change date="Nov 3, 2026" what="Rialto moves to Solana. Kit 0.10.0: rialto sol init, status, config, token, holders, burns, trades, stock, send, burn, fund and pay, plus watch. Venice top-ups straight from Solana USDC through Venice's own x402 top-up; x402 payments in USDC with the exact scheme, facilitator-paid fees. Classic Token and Token-2022 mints both work. Local MCP adds the sol_* tools. The new site, this page, is written for Solana; the token section fills in the day the mint goes live." />
@@ -389,7 +391,7 @@ function Index() {
           </div>
           <div className="space-y-2 text-sm">
             <p className="font-mono text-xs uppercase tracking-wider text-ink-2">Downloads</p>
-            <p><DownloadLink href="/downloads/rialto-kit-0.12.0.tgz">rialto-kit-0.12.0.tgz</DownloadLink></p>
+            <p><DownloadLink href="/downloads/rialto-kit-0.12.1.tgz">rialto-kit-0.12.1.tgz</DownloadLink></p>
             <p><DownloadLink href="/downloads/rialto-kit-source.zip">Source, zip</DownloadLink></p>
             <p><DownloadLink href="/downloads/SKILL.md">SKILL.md for agents</DownloadLink></p>
           </div>

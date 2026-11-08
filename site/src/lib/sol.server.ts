@@ -20,6 +20,15 @@ export function resolveMint(mint?: string | null): PublicKey {
   return new PublicKey(v);
 }
 
+/** Burn since launch from supply alone: Rialto was created with 1,000,000,000 tokens and the mint authority is null, so supply only moves down. Only for the Rialto mint. */
+export function burnedSinceLaunch(mint: PublicKey, supply: number): { initialSupply: number | null; burnedSinceLaunch: number | null; burnedPctOfInitial: number | null } {
+  const env = process.env.RIALTO_SOLANA_INITIAL_SUPPLY;
+  if (!mint.equals(resolveMint(null)) && !env) return { initialSupply: null, burnedSinceLaunch: null, burnedPctOfInitial: null };
+  const initial = Number(env ?? 1_000_000_000);
+  const burned = Math.max(0, initial - supply);
+  return { initialSupply: initial, burnedSinceLaunch: Math.round(burned * 100) / 100, burnedPctOfInitial: Math.round((burned / initial) * 10000) / 100 };
+}
+
 const CACHE = new Map<string, { at: number; value: unknown; inflight?: Promise<unknown> }>();
 async function cached<T>(key: string, ttlMs: number, fn: () => Promise<T>): Promise<T> {
   const hit = CACHE.get(key);
@@ -226,7 +235,7 @@ export async function solBurns(mintIn?: string | null, scanN = 100) {
     }
     const total = burns.reduce((a, b) => a + b.amount, 0);
     const supply = ui(info.supply, info.decimals);
-    return { chain: "solana", mint: mint.toBase58(), scannedTransactions: sigs.length, complete: !throttled, note: throttled ? "The RPC throttled transaction reads; the scan stopped early. Set SOLANA_RPC_URL to a private endpoint for a full list." : undefined, count: burns.length, burnedTotal: Math.round(total * 100) / 100, burnedPctOfCurrentSupply: supply ? Math.round((total / supply) * 10000) / 100 : null, burns, fetchedAt: new Date().toISOString() };
+    return { chain: "solana", mint: mint.toBase58(), scannedTransactions: sigs.length, complete: !throttled, note: throttled ? "The RPC throttled transaction reads; the scan stopped early. Set SOLANA_RPC_URL to a private endpoint for a full list." : undefined, count: burns.length, burnedTotal: Math.round(total * 100) / 100, burnedPctOfCurrentSupply: supply ? Math.round((total / supply) * 10000) / 100 : null, ...burnedSinceLaunch(mint, supply), burns, fetchedAt: new Date().toISOString() };
   });
 }
 

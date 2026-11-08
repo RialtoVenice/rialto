@@ -17,7 +17,7 @@ export const Route = createFileRoute("/api/sol/ticker")({
           if (st?.volume24hUsd) items.push({ k: "24h volume", v: `$${fmt(st.volume24hUsd)}` });
           if (st?.liquidityUsd) items.push({ k: "liquidity", v: `$${fmt(st.liquidityUsd)}` });
           if (holders?.holders) items.push({ k: "holders", v: fmt(holders.holders) });
-          if (burns) items.push({ k: "burned", v: `${fmt(burns.burnedTotal)} (${burns.burnedPctOfCurrentSupply ?? 0}%)`, tone: "brick" });
+          if (burns) items.push({ k: "burned since launch", v: `${fmt(burns.burnedSinceLaunch ?? burns.burnedTotal)} (${burns.burnedPctOfInitial ?? burns.burnedPctOfCurrentSupply ?? 0}%)`, tone: "brick" });
           if (trades) items.push({ k: "last hour", v: `${trades.lastHour.buys} buys / ${trades.lastHour.sells} sells`, tone: trades.lastHour.buys >= trades.lastHour.sells ? "up" : "down" });
           return { items, fetchedAt: new Date().toISOString() };
         }, request),

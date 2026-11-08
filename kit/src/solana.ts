@@ -50,6 +50,25 @@ export function resolveMint(mint?: string): PublicKey {
   return new PublicKey(v);
 }
 
+/**
+ * Burn since launch, derived from supply. Rialto was created with 1,000,000,000 tokens and its mint authority is null,
+ * so supply only ever moves down: initial minus current is everything burned, with no transaction scan and no RPC limit.
+ * Only computed for the configured Rialto mint (or when RIALTO_SOLANA_INITIAL_SUPPLY is set for another mint).
+ */
+export function burnedSinceLaunch(mint: PublicKey, supply: number): { initialSupply: number | null; burnedSinceLaunch: number | null; burnedPctOfInitial: number | null } {
+  let isDefault = false;
+  try {
+    isDefault = mint.equals(resolveMint());
+  } catch {
+    isDefault = false;
+  }
+  const env = process.env.RIALTO_SOLANA_INITIAL_SUPPLY;
+  if (!isDefault && !env) return { initialSupply: null, burnedSinceLaunch: null, burnedPctOfInitial: null };
+  const initial = Number(env ?? 1_000_000_000);
+  const burned = Math.max(0, initial - supply);
+  return { initialSupply: initial, burnedSinceLaunch: Math.round(burned * 100) / 100, burnedPctOfInitial: Math.round((burned / initial) * 10000) / 100 };
+}
+
 const ui = (raw: bigint | number | string, decimals: number) => Number(raw) / 10 ** decimals;
 
 /** Mint facts plus the token program that owns the mint (classic Token or Token-2022), read from the account itself. */
@@ -144,6 +163,7 @@ export async function solToken(mintIn?: string) {
     program: program.equals(TOKEN_2022_PROGRAM_ID) ? "token-2022" : "token",
     decimals: info.decimals,
     supply,
+    ...burnedSinceLaunch(mint, supply),
     mintAuthority: info.mintAuthority?.toBase58() ?? null,
     freezeAuthority: info.freezeAuthority?.toBase58() ?? null,
     holders,
@@ -232,7 +252,7 @@ export async function solBurns(mintIn?: string, scan = 500) {
   }
   const total = burns.reduce((a, b) => a + b.amount, 0);
   const supply = ui(info.supply, info.decimals);
-  return { chain: "solana", mint: mint.toBase58(), scannedTransactions: sigs.length, complete: sigs.length < scan, count: burns.length, burnedTotal: Math.round(total * 100) / 100, burnedPctOfCurrentSupply: supply ? Math.round((total / supply) * 10000) / 100 : null, burns };
+  return { chain: "solana", mint: mint.toBase58(), scannedTransactions: sigs.length, complete: sigs.length < scan, count: burns.length, burnedTotal: Math.round(total * 100) / 100, burnedPctOfCurrentSupply: supply ? Math.round((total / supply) * 10000) / 100 : null, ...burnedSinceLaunch(mint, supply), burns };
 }
 
 function allInstructions(tx: ParsedTransactionWithMeta): (ParsedInstruction | { programId: PublicKey })[] {
