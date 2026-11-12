@@ -62,6 +62,7 @@ Tools: `rialto_wallet`, `hood_chain_status`, `hood_balances`, `hood_wallet_repor
 - `toolCaps` caps each tool separately inside a run: `sol_pay` is refused once its cap is spent and the remaining cap becomes the ceiling of the next payment, `venice` stops inference at its cap. Set per run with `--cap tool=usd` or once in config.
 - `hood_send_usdg` and `rialto_fund_venice` move real funds. Confirm with the user before calling them.
 - The private key never leaves `~/.rialto/config.json` (mode 600) or `RIALTO_PRIVATE_KEY`.
+- `dailyLimitUsd` (unset by default; `rialto config dailyLimitUsd 2`) caps the x402 payments signed per UTC day across every run, the CLI and the MCP server. A payment that would cross it is refused before signing; do not retry, report it.
 - Every payment signed is appended to `~/.rialto/receipts.jsonl`. `rialto sol receipts` / MCP `sol_receipts` / agent tool `sol_receipts` read it. Check it before and after a run that pays.
 
 ## Facts the code relies on (verified 2026-09-09)

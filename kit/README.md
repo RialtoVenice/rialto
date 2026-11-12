@@ -9,7 +9,7 @@ The name is the bridge. In Venice, the Rialto crosses the Grand Canal. Here it c
 The package is not on npm yet. Install the hosted tarball, or build from this folder.
 
 ```bash
-npm i -g https://rialto.casa/downloads/rialto-kit-0.12.1.tgz
+npm i -g https://rialto.casa/downloads/rialto-kit-0.13.0.tgz
 rialto sol init                  # creates the Solana keypair in ~/.rialto/config.json (mode 600)
 ```
 
@@ -73,6 +73,7 @@ All enforced locally, before any signature:
 | `agentBudgetUsd` (`-b`) | One `rialto agent` run: inference plus every payment, measured from Venice's `X-Balance-Remaining` header | `agent.ts` |
 | `toolCaps` (`--cap tool=usd`) | One tool inside a run. `sol_pay` is refused once its cap is spent and the remaining cap becomes the ceiling of the next payment. `venice` stops inference at its cap. | `agent.ts` |
 | `maxPaymentUsdg` (`--max`) | One x402 payment | `solpay.ts` |
+| `dailyLimitUsd` | Every x402 payment signed in one UTC day, across runs, the CLI and the MCP server. Checked against the receipts ledger; a payment that would cross it is refused before signing. Failed payments count: a signature is a commitment. | `solpay.ts`, `receipts.ts` |
 | `payAllowlist` | Hosts the payer may pay | `solpay.ts` |
 
 When a tool is refused, the model receives the refusal as a normal tool result. The system prompt tells it not to retry and to finish with what it has.
@@ -93,6 +94,7 @@ Every payment the kit signs (x402 on Solana, Venice top-ups) is appended to `~/.
 | `agentBudgetUsd` | `RIALTO_AGENT_BUDGET_USD` | `1` | Hard cap per agent run |
 | `toolCaps` | | unset | Per-tool caps, e.g. `sol_pay=0.05,venice=0.03` |
 | `maxPaymentUsdg` | `RIALTO_MAX_PAYMENT_USDG` | `1` | Hard cap per x402 payment |
+| `dailyLimitUsd` | `RIALTO_DAILY_LIMIT_USD` | unset | Cap on x402 payments signed per UTC day; `rialto config dailyLimitUsd off` removes it |
 | `payAllowlist` | | empty | Hostnames the payer may pay |
 
 ## MCP

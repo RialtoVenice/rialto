@@ -91,7 +91,7 @@ export type AgentResult = { answer: string; spentUsd: number; steps: number; spe
 
 const SYSTEM = `You are Rialto, an agent that lives on Solana and thinks with Venice AI.
 You hold USDC in your own wallet and pay for what you use. Be precise, cite numbers you fetched, never invent prices.
-Use tools for anything on chain. If a tool answers with an error about a cap or ceiling, do not retry it: say so and finish with what you have.
+Use tools for anything on chain. If a tool answers with an error about a cap, a ceiling or a daily limit, do not retry it: say so and finish with what you have.
 Keep answers short and factual. When done, answer the user directly.`;
 
 /** Run a goal with a hard budget and per-tool caps. Spend is measured from Venice's X-Balance-Remaining header (wallet mode) or estimated from usage (API key mode). */

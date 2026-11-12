@@ -10,7 +10,7 @@ import { Ticker } from "../components/ticker";
 import { SolRankCard } from "../components/sol-rank-card";
 import { PRIMARY_ORIGIN, SOLANA_CHART, SOLANA_EXPLORER_TOKEN, SOLANA_MINT, X_URL } from "../lib/site";
 
-const tarballUrl = (origin: string) => `${origin}/downloads/rialto-kit-0.12.1.tgz`;
+const tarballUrl = (origin: string) => `${origin}/downloads/rialto-kit-0.13.0.tgz`;
 
 const JSON_LD = JSON.stringify({
   "@context": "https://schema.org",
@@ -365,6 +365,7 @@ function Index() {
           <div className="mx-auto max-w-6xl px-6 py-20">
             <h2 className="text-3xl font-semibold tracking-tight text-ink md:text-4xl">What changed</h2>
             <ul className="mt-10 divide-y divide-line border-y border-line">
+              <Change date="Nov 12, 2026" what="Kit 0.13.0: a daily limit. rialto config dailyLimitUsd 2 caps the x402 payments the wallet signs per UTC day, across every run, the CLI and the MCP server. The payer checks the receipts ledger before signing and refuses what would cross the limit. Per-run caps stop one run; this stops a hundred. rialto sol receipts shows signed today and what is left." />
               <Change date="Nov 8, 2026" what="Burn since launch is now derived from supply, not from a transaction scan: 1,000,000,000 created, mint authority null, so created minus current is the burn, on the ticker, the home page, /api/sol/burns and in kit 0.12.1 (rialto sol token, rialto sol burns). The public RPC can throttle a scan; it cannot throttle a subtraction. Source now linked: github.com/RialtoVenice/rialto." />
               <Change date="Nov 6, 2026" what="Kit 0.12.0: a local ledger of every payment the kit signs. ~/.rialto/receipts.jsonl gets one line per x402 payment or Venice top-up (time, URL, amount, status, signature, ceiling), written by the payer itself. rialto sol receipts sums it up; the agent and the MCP read it through sol_receipts." />
               <Change date="Nov 4, 2026" what="Kit 0.11.0: per-tool caps for the agent. rialto agent --cap sol_pay=0.05 --cap venice=0.03 gives each tool its own ceiling for the run: a paying tool is refused once its cap is spent and the remaining cap becomes the ceiling of its next payment, venice stops inference at its cap. The run budget now counts payments too. Also in config as toolCaps, and in the MCP rialto_agent tool. The reference agent now runs on the Solana tools (sol_status, sol_token, sol_holders, sol_stock, sol_pay). Mint live: 8h88ucUAF5o6CEr8rphy9rwNPD7gt2qBEmCv81SCpump." />
@@ -391,7 +392,7 @@ function Index() {
           </div>
           <div className="space-y-2 text-sm">
             <p className="font-mono text-xs uppercase tracking-wider text-ink-2">Downloads</p>
-            <p><DownloadLink href="/downloads/rialto-kit-0.12.1.tgz">rialto-kit-0.12.1.tgz</DownloadLink></p>
+            <p><DownloadLink href="/downloads/rialto-kit-0.13.0.tgz">rialto-kit-0.13.0.tgz</DownloadLink></p>
             <p><DownloadLink href="/downloads/rialto-kit-source.zip">Source, zip</DownloadLink></p>
             <p><DownloadLink href="/downloads/SKILL.md">SKILL.md for agents</DownloadLink></p>
           </div>

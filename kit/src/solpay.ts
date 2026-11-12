@@ -9,7 +9,7 @@ import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID, createTransferCheckedInstructi
 import { resolveConfig } from "./config.js";
 import { USDC_MINT, getSolanaKeypair, solanaConnection } from "./solana.js";
 import { parsePaymentRequired, type PaymentReceipt, type PaymentRequirement } from "./x402.js";
-import { recordReceipt, settlementSignature } from "./receipts.js";
+import { recordReceipt, settlementSignature, signedTodayUsdc } from "./receipts.js";
 
 export const SOLANA_MAINNET_CAIP2 = "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp";
 const SOLANA_NETWORKS = new Set([SOLANA_MAINNET_CAIP2, "solana", "solana-mainnet"]);
@@ -82,6 +82,11 @@ export async function payFetchSolana(url: string, opts: SolPayOptions = {}): Pro
   if (opts.dryRun) return { response: first, text: firstText, requirement: req };
   const ceiling = opts.maxUsdc ?? cfg.maxPaymentUsdg;
   if (amount > ceiling) throw new Error(`Endpoint asks ${amount} USDC, above the ${ceiling} ceiling. Raise maxPaymentUsdg to allow it.`);
+  if (cfg.dailyLimitUsd !== undefined) {
+    // Checked against the receipts ledger, so the limit holds across runs, the CLI and the MCP server alike.
+    const signed = signedTodayUsdc();
+    if (signed + amount > cfg.dailyLimitUsd + 1e-9) throw new Error(`Daily limit reached: this wallet already signed ${signed} USDC of x402 payments today (UTC) and this one asks ${amount}. The limit is ${cfg.dailyLimitUsd}. Not paying. Raise dailyLimitUsd or wait for 00:00 UTC.`);
+  }
   const { header } = await signSolanaPayment(req, required.x402Version ?? 1, url, required.resource);
   const paid = await fetch(url, { ...init, headers: { ...(init.headers as Record<string, string>), "PAYMENT-SIGNATURE": header, "X-PAYMENT": header } });
   const text = await paid.text();

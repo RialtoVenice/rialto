@@ -13,6 +13,8 @@ export type RialtoConfig = {
   maxPaymentUsdg?: number;
   /** Optional allowlist of hostnames the x402 payer may pay. Empty means any HTTPS host. */
   payAllowlist?: string[];
+  /** Ceiling, in USDC, on the x402 payments this wallet signs per UTC day, across every run, the CLI and the MCP server. Read from the receipts ledger. */
+  dailyLimitUsd?: number;
   /** Per-tool USD caps for a single `rialto agent` run, e.g. { "sol_pay": 0.05, "venice": 0.03 }. */
   toolCaps?: Record<string, number>;
   /** Solana keypair secret, base58 (64 bytes). Created by `rialto sol init`. */
@@ -61,6 +63,7 @@ export function resolveConfig(): RialtoConfig & { defaultModel: string; agentBud
     defaultModel: process.env.RIALTO_MODEL ?? file.defaultModel ?? DEFAULTS.defaultModel,
     agentBudgetUsd: Number(process.env.RIALTO_AGENT_BUDGET_USD ?? file.agentBudgetUsd ?? DEFAULTS.agentBudgetUsd),
     maxPaymentUsdg: Number(process.env.RIALTO_MAX_PAYMENT_USDG ?? file.maxPaymentUsdg ?? DEFAULTS.maxPaymentUsdg),
+    dailyLimitUsd: process.env.RIALTO_DAILY_LIMIT_USD !== undefined ? Number(process.env.RIALTO_DAILY_LIMIT_USD) : file.dailyLimitUsd,
   };
 }
 

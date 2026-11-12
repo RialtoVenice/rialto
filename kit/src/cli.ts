@@ -617,6 +617,7 @@ sol
       const s = receiptsSummary({ limit: Number(o.limit), since: o.since });
       if (o.json) return out(s);
       console.log(`${s.settled} settled payment${s.settled === 1 ? "" : "s"} (${s.count} recorded), ${s.totalUsdc} USDC total, ${s.todayUsdc} USDC today. Ledger: ${s.path}`);
+      console.log(s.dailyLimitUsd !== null ? `Daily limit: ${s.signedTodayUsdc} of ${s.dailyLimitUsd} USDC signed today (UTC), ${s.remainingTodayUsdc} left.` : `Signed today (UTC): ${s.signedTodayUsdc} USDC of x402 payments. No daily limit set (rialto config dailyLimitUsd 2).`);
       for (const [host, h] of Object.entries(s.byHost).sort((a, b) => b[1].usdc - a[1].usdc)) console.log(`  ${host.padEnd(28)} ${String(h.count).padStart(4)} payment${h.count === 1 ? " " : "s"}  ${h.usdc} USDC`);
       if (s.last.length) console.log("");
       for (const r of s.last) console.log(`${r.at.slice(0, 19).replace("T", " ")}  ${r.kind.padEnd(5)} ${String(r.amountUsdc).padStart(10)} USDC  ${r.status < 400 ? "ok " : r.status}  ${r.host}${r.signature ? "  " + r.signature : r.ref ? "  " + r.ref : ""}`);
@@ -918,11 +919,17 @@ program
 
 program
   .command("config [key] [value]")
-  .description("Read or write config (defaultModel, agentBudgetUsd, maxPaymentUsdg, payAllowlist, toolCaps, veniceApiKey)")
+  .description("Read or write config (defaultModel, agentBudgetUsd, maxPaymentUsdg, dailyLimitUsd, payAllowlist, toolCaps, veniceApiKey). `rialto config dailyLimitUsd off` removes the daily limit")
   .action((key?: string, value?: string) => {
     const cfg = readConfig();
     if (!key) return out({ ...cfg, privateKey: cfg.privateKey ? "(set)" : undefined, veniceApiKey: cfg.veniceApiKey ? "(set)" : undefined });
     if (value === undefined) return out((cfg as Record<string, unknown>)[key] ?? null);
+    if (key === "dailyLimitUsd" && /^(off|none)$/i.test(value)) {
+      const { dailyLimitUsd: _removed, ...rest } = cfg;
+      writeConfig(rest);
+      return out("removed dailyLimitUsd");
+    }
+    if (key === "dailyLimitUsd" && !/^\d+(\.\d+)?$/.test(value)) return fail(new Error("dailyLimitUsd must be a number of USDC, or off"));
     const parsed = key === "payAllowlist" ? value.split(",").map((s) => s.trim()).filter(Boolean) : key === "toolCaps" ? parseToolCaps(value) : /^\d+(\.\d+)?$/.test(value) ? Number(value) : value;
     writeConfig({ ...cfg, [key]: parsed });
     out(`set ${key}`);

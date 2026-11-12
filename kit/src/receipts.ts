@@ -5,7 +5,7 @@
  */
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { RIALTO_HOME } from "./config.js";
+import { RIALTO_HOME, resolveConfig } from "./config.js";
 
 export const RECEIPTS_PATH = join(RIALTO_HOME, "receipts.jsonl");
 
@@ -56,8 +56,26 @@ export function readReceipts(): Receipt[] {
   return out;
 }
 
+/**
+ * USDC of x402 payments this wallet signed since 00:00 UTC, settled or not. A signature is a commitment: an endpoint
+ * that takes the payment and answers with an error must not get a second one for free, so every signed payment counts.
+ * Venice top-ups are not counted: they move the wallet's own money to its own credit.
+ */
+export function signedTodayUsdc(now: Date = new Date()): number {
+  const dayStart = new Date(now);
+  dayStart.setUTCHours(0, 0, 0, 0);
+  const sum = readReceipts()
+    .filter((r) => r.kind === "x402" && new Date(r.at).getTime() >= dayStart.getTime())
+    .reduce((a, r) => a + r.amountUsdc, 0);
+  return Math.round(sum * 1e6) / 1e6;
+}
+
 export type ReceiptsSummary = {
   path: string;
+  /** x402 payments signed since 00:00 UTC, settled or not: the figure the daily limit is checked against. */
+  signedTodayUsdc: number;
+  dailyLimitUsd: number | null;
+  remainingTodayUsdc: number | null;
   count: number;
   settled: number;
   totalUsdc: number;
@@ -81,8 +99,13 @@ export function receiptsSummary(opts: { limit?: number; since?: string } = {}): 
   }
   const round = (n: number) => Math.round(n * 1e6) / 1e6;
   for (const h of Object.values(byHost)) h.usdc = round(h.usdc);
+  const limit = resolveConfig().dailyLimitUsd;
+  const signedToday = signedTodayUsdc();
   return {
     path: RECEIPTS_PATH,
+    signedTodayUsdc: signedToday,
+    dailyLimitUsd: limit ?? null,
+    remainingTodayUsdc: limit !== undefined ? round(Math.max(0, limit - signedToday)) : null,
     count: all.length,
     settled: ok.length,
     totalUsdc: round(ok.reduce((a, r) => a + r.amountUsdc, 0)),
