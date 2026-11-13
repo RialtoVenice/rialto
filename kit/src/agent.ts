@@ -8,6 +8,7 @@
  *   toolCaps    per-tool ceilings for the run, e.g. { sol_pay: 0.05, venice: 0.03 }. A tool whose cap is reached
  *               is refused and the model is told why; "venice" caps inference spend on its own.
  *   maxPayment  per-payment ceiling (config maxPaymentUsdg) and payAllowlist, enforced inside the payer.
+ *               A per-tool cap never loosens it: the payer applies the tighter of the two.
  */
 import { resolveConfig } from "./config.js";
 import { solHolders, solStatus, solStock, solToken } from "./solana.js";
@@ -63,9 +64,10 @@ export async function runTool(name: string, args: Record<string, unknown>, ctx?:
     case "sol_receipts":
       return receiptsSummary({ limit: args.limit ? Number(args.limit) : undefined, since: args.since ? String(args.since) : undefined });
     case "sol_pay": {
-      // The remaining cap becomes this payment's ceiling, so a single call can never overshoot the cap.
+      // What is left on the cap goes to the payer next to the per-payment ceiling; the tighter of the two applies,
+      // so a single call can never overshoot the cap and a large cap never loosens the ceiling.
       const remaining = cap !== undefined ? Math.max(0, cap - spent) : undefined;
-      const r = await payFetchSolana(String(args.url), { method: args.method ? String(args.method) : undefined, body: args.body ? String(args.body) : undefined, maxUsdc: remaining });
+      const r = await payFetchSolana(String(args.url), { method: args.method ? String(args.method) : undefined, body: args.body ? String(args.body) : undefined, capLeftUsdc: remaining });
       const paid = r.receipt ? Number(r.receipt.amountUsdg) : 0;
       if (ctx) ctx.spentByTool[name] = spent + paid;
       return { status: r.response.status, receipt: r.receipt, paidUsdc: paid, body: r.text.slice(0, 4000) };
@@ -110,12 +112,12 @@ export async function runAgent(goal: string, opts: AgentOptions = {}): Promise<A
   const empty = (): AgentResult => ({ answer: "", spentUsd: 0, steps: 0, spentByTool: ctx.spentByTool });
 
   let startBalance: number | null = null;
-  if (auth.kind === "wallet") {
+  if (auth.kind !== "apiKey") {
     try {
       const b = await veniceBalance(auth);
       startBalance = b.balanceUsd + (b.diemBalanceUsd ?? 0);
       if (!b.canConsume) {
-        emit({ type: "stop", reason: `Venice balance is ${b.balanceUsd} USD and cannot consume. Run \`rialto sol fund 5\` first.` });
+        emit({ type: "stop", reason: `Venice balance of ${b.walletAddress} is ${b.balanceUsd} USD and cannot consume. Run \`rialto sol fund 5\` first${auth.kind === "solana" ? ", or `rialto config veniceWallet evm` if the credit sits on the EVM wallet" : ""}.` });
         return empty();
       }
     } catch (e) {

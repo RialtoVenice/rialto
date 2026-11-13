@@ -1,129 +1,101 @@
 ---
 name: rialto
-description: Venice AI agent kit for Robinhood Chain. Use when an agent needs to hold USDG on Robinhood Chain, pay x402 endpoints in USDG, read tokenized stock prices or wallets on Robinhood Chain, or fund and call Venice AI from the same wallet without an API key.
+description: Venice AI agent kit on Solana. Use when an agent needs its own Solana wallet, has to pay x402 endpoints in USDC, fund and call Venice AI from that same wallet without an API key, or read an SPL mint on Solana (supply, authorities, holders, burns, trades) from the chain.
 ---
 
 # Rialto
 
-Rialto gives an agent one EVM wallet that lives on Robinhood Chain (chain id 4663) and pays for everything it uses:
+Rialto gives an agent one Solana keypair that pays for everything it uses:
 
-- **USDG payments** to any x402 endpoint on Robinhood Chain (v1 or v2, `exact` scheme, EIP-3009 on USDG, no gas).
-- **Venice AI inference** paid from that same wallet: `rialto fund <usdg>` bridges USDG to USDC on Base and tops up the wallet's Venice credit. Every Venice call then carries a signed `SIGN-IN-WITH-X` header.
-- **Robinhood Chain reads**: chain status, ETH and USDG balances, wallet reports, tokenized stock prices (AAPL, TSLA, NVDA and any ticker), top pools.
+- **USDC payments** to any x402 endpoint that offers a Solana option (`exact` scheme, USDC mint `EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v`). The facilitator named in the 402 pays the network fee: no SOL leaves the wallet for a payment.
+- **Venice AI inference** paid from that same keypair: `rialto sol fund <usd>` tops up the wallet's Venice credit straight from its USDC, and every Venice call carries a fresh `SIGN-IN-WITH-X` header signed by the keypair (ed25519). The wallet that pays is the wallet that signs in. No API key.
+- **Solana reads** with no indexer: balances, any SPL mint (supply, mint and freeze authorities, holders by full scan, burns, trade tape), tokenized stocks (xStocks).
 
 ## Install
 
 ```bash
-npx rialto-kit init          # creates ~/.rialto/config.json with a fresh wallet
+npm i -g https://rialto.casa/downloads/rialto-kit-0.14.0.tgz
+rialto sol init              # creates the keypair in ~/.rialto/config.json (mode 600)
 ```
 
-Or from the hosted tarball when the package is not on npm yet:
+Send USDC to the printed address (a little SOL only for `sol send` and `sol burn`), then `rialto sol fund 5`.
 
-```bash
-npx https://rialto.casa/downloads/rialto-kit-0.1.0.tgz init
-```
-
-Then fund the printed address on Robinhood Chain: USDG for spending plus a few cents of ETH for gas.
+Source: https://github.com/RialtoVenice/rialto
 
 ## Commands
 
 | Command | What it does |
 |---|---|
-| `rialto init [--venice-key <key>]` | Create or show the wallet. Optional API-key mode for Venice. |
-| `rialto status` | Balances on Robinhood Chain, Venice credit, chain status. |
-| `rialto fund <usdg>` | USDG -> USDC on Base (Relay, Across fallback) -> Venice top-up. Raises the amount itself so at least 5 USD land at Venice after bridge fees. |
-| `rialto chat "<prompt>" [--web] [-m model]` | Ask Venice. |
-| `rialto agent "<goal>" -b <usd> [--cap tool=usd]` | Budgeted reference agent with Solana tools and USDC x402 payments. `--cap sol_pay=0.05 --cap venice=0.03` caps each tool separately for the run. |
-| `rialto pay <url> [--dry-run] [--max <usdg>]` | Fetch a URL, pay in USDG if it answers 402. |
-| `rialto stocks price <ticker>` / `find` / `pools` / `list` | Tokenized stocks and pools on Robinhood Chain. |
-| `rialto wallet <address>` | Read-only wallet report. |
-| `rialto send <to> <usdg>` | Transfer USDG. Irreversible. |
-| `rialto quote <usdg>` / `rialto bridge <usdg>` / `rialto topup <usd>` | Bridge pieces, individually. |
-| `rialto venice balance` / `ledger` / `models` / `search "<q>"` | Venice account and web search. |
-| `rialto mcp` | Start the MCP server on stdio. |
-| `rialto config [key] [value]` | `defaultModel`, `agentBudgetUsd`, `maxPaymentUsdg`, `payAllowlist`, `toolCaps` (`sol_pay=0.05,venice=0.03`), `veniceApiKey`. |
+| `rialto sol init` | Create or show the Solana keypair. The secret never leaves the config file. |
+| `rialto sol status [address]` | SOL, USDC and Rialto balances, current slot; for this wallet, its Venice credit too. |
+| `rialto sol fund <usd>` | Top up Venice from this wallet's USDC (Venice minimum: 5). No bridge, no SOL fee. |
+| `rialto chat "<prompt>" [--web] [-m model]` | Ask a Venice model, paid from the wallet's Venice credit. |
+| `rialto agent "<goal>" -b <usd> [--cap tool=usd] [-s 8]` | Budgeted reference agent with Solana tools and x402 payments. Stops on an answer, on the budget, or at step 8. |
+| `rialto sol pay <url> [--dry-run] [--max <usd>]` | Fetch a URL and pay in USDC if it answers 402 with a Solana option. `--dry-run` shows the requirement and signs nothing. |
+| `rialto sol receipts [-n 20] [--since <date>] [--json]` | Every payment this kit signed, from `~/.rialto/receipts.jsonl`: totals, by host, signatures, signed today. |
+| `rialto sol token [mint]` | Mint facts: supply, decimals, mint and freeze authorities, burn since launch, 20 largest accounts with owners, price and pool. |
+| `rialto sol holders [mint] -n 20` | Holders by wallet: full scan when the RPC allows it, else the 20 largest with `complete: false`. |
+| `rialto sol burns [mint]` | Burn instructions in the mint's recent transactions, with amounts and signatures. |
+| `rialto sol trades [mint]` | Trade tape of the deepest pool, last hour totals. |
+| `rialto sol stock <symbol>` | Tokenized stock on Solana (AAPLx, TSLAx, NVDAx): mint, USD price, deepest pool. |
+| `rialto sol send <to> <amount> --yes [--sol \| --rialto]` | Send USDC, SOL or Rialto. Creates the recipient's token account if missing. Irreversible. |
+| `rialto sol burn <amount> --yes` | Burn Rialto (BurnChecked). Irreversible. |
+| `rialto sol watch [--json]` | Follow slot, balances and the Rialto trade tape live. |
+| `rialto venice balance` / `ledger` / `models` / `search "<q>"` | Venice credit of the wallet that signs in, ledger entries, models, private web search. |
+| `rialto mcp` | MCP server on stdio. |
+| `rialto config [key] [value]` | `defaultModel`, `agentBudgetUsd`, `maxPaymentUsdg`, `dailyLimitUsd`, `payAllowlist`, `toolCaps`, `veniceWallet`, `veniceApiKey`. |
+
+The Rialto mint is `8h88ucUAF5o6CEr8rphy9rwNPD7gt2qBEmCv81SCpump` (Token-2022, 6 decimals, mint and freeze authority null). Every `sol` read takes another mint as argument.
 
 ## MCP
 
-Local (full tools, has the wallet):
+Local, full tools, has the wallet:
 
 ```json
-{ "mcpServers": { "rialto": { "command": "npx", "args": ["-y", "rialto-kit", "mcp"] } } }
+{ "mcpServers": { "rialto": { "command": "rialto", "args": ["mcp"] } } }
 ```
 
-Hosted, read-only, no install: `https://rialto.casa/mcp` (mirror: `https://rialto-kit.higgsfield.app/mcp`) (Streamable HTTP, stateless).
+Hosted, read-only, no install, no wallet on the server: `https://rialto.casa/mcp` (Streamable HTTP, stateless).
 
-Tools: `rialto_wallet`, `hood_chain_status`, `hood_balances`, `hood_wallet_report`, `hood_stock_price`, `hood_stock_find`, `hood_top_pools`, `hood_send_usdg`, `x402_pay`, `venice_chat`, `venice_web_search`, `venice_models`, `venice_balance`, `venice_transactions`, `rialto_quote_bridge`, `rialto_fund_venice`, `rialto_agent`.
+Solana tools of the local server: `sol_status`, `sol_token`, `sol_holders`, `sol_burns`, `sol_trades`, `sol_stock`, `sol_receipts`, `sol_pay`, `sol_fund`, `sol_send`, `sol_burn`. Venice: `venice_chat`, `venice_web_search`, `venice_models`, `venice_balance`, `venice_transactions`. Agent: `rialto_agent`.
 
 ## Guardrails an agent must respect
 
-- `maxPaymentUsdg` (default 1) caps one x402 payment. `payAllowlist` restricts hosts.
-- `agentBudgetUsd` (default 1) caps one `rialto agent` run, measured from Venice's `X-Balance-Remaining` plus every x402 payment the run made.
-- `toolCaps` caps each tool separately inside a run: `sol_pay` is refused once its cap is spent and the remaining cap becomes the ceiling of the next payment, `venice` stops inference at its cap. Set per run with `--cap tool=usd` or once in config.
-- `hood_send_usdg` and `rialto_fund_venice` move real funds. Confirm with the user before calling them.
-- The private key never leaves `~/.rialto/config.json` (mode 600) or `RIALTO_PRIVATE_KEY`.
-- `dailyLimitUsd` (unset by default; `rialto config dailyLimitUsd 2`) caps the x402 payments signed per UTC day across every run, the CLI and the MCP server. A payment that would cross it is refused before signing; do not retry, report it.
-- Every payment signed is appended to `~/.rialto/receipts.jsonl`. `rialto sol receipts` / MCP `sol_receipts` / agent tool `sol_receipts` read it. Check it before and after a run that pays.
+All enforced locally, before any signature:
 
-## Facts the code relies on (verified 2026-09-09)
+- `agentBudgetUsd` (default 1, `-b`) caps one `rialto agent` run: inference measured from Venice's `X-Balance-Remaining` header plus every x402 payment the run made.
+- `toolCaps` (`--cap tool=usd`) caps each tool inside a run: `sol_pay` is refused once its cap is spent, `venice` stops inference at its cap.
+- `maxPaymentUsdg` (default 1, `--max`) caps one x402 payment. A per-tool cap never loosens it: the payer applies the tighter of the two, the per-payment ceiling or what is left on the cap.
+- `dailyLimitUsd` (unset by default; `rialto config dailyLimitUsd 2`) caps the x402 payments signed per UTC day across every run, the CLI and the MCP server. A payment that would cross it is refused before signing.
+- `payAllowlist` restricts the hosts the payer may pay. Payments go to HTTPS endpoints only, and only to an offer naming the USDC mint.
+- A refused tool answers with an error. Do not retry it: report it and finish with what you have.
+- `sol_send`, `sol_burn` and `sol_fund` move real funds. Confirm with the user before calling them.
+- Every payment signed is appended to `~/.rialto/receipts.jsonl`. Read it with `rialto sol receipts` or `sol_receipts` before and after a run that pays.
+- The secret key never leaves `~/.rialto/config.json` (mode 600) or `SOLANA_SECRET_KEY`.
 
-- USDG on Robinhood Chain: `0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168`, 6 decimals, EIP-712 domain `Global Dollar` v`1`, supports `transferWithAuthorization` (EIP-3009) and `permit`.
-- Venice x402: prepaid USD ledger per wallet, top-up with USDC on Base (`eip155:8453`) or Solana, minimum 5 USD. Auth header `SIGN-IN-WITH-X`.
-- Relay and Across both bridge USDG (4663) to USDC (8453) in about 2 seconds for roughly 0.1 percent.
+## Configuration
 
+`~/.rialto/config.json`, or environment variables. `RIALTO_HOME` moves the folder.
 
-## Holder tiers (hosted API and MCP)
+| Key | Env | Default |
+|---|---|---|
+| `solanaSecret` | `SOLANA_SECRET_KEY` | generated by `sol init` |
+| `solanaMint` | `RIALTO_SOLANA_MINT` | the Rialto mint |
+| | `SOLANA_RPC_URL` | public RPC; set a private one for full holder scans and burn history |
+| `veniceWallet` | `RIALTO_VENICE_WALLET` | `solana` when a Solana key exists; `evm` signs in with the EVM key instead |
+| `veniceApiKey` | `VENICE_API_KEY` | unset; an API key replaces the wallet ledger |
+| `defaultModel` | `RIALTO_MODEL` | `zai-org-glm-5-2` |
+| `agentBudgetUsd` | `RIALTO_AGENT_BUDGET_USD` | `1` |
+| `maxPaymentUsdg` | `RIALTO_MAX_PAYMENT_USDG` | `1` |
+| `dailyLimitUsd` | `RIALTO_DAILY_LIMIT_USD` | unset |
+| `toolCaps`, `payAllowlist` | | unset |
 
-The hosted endpoints at https://rialto.casa apply a tier from the Rialto token balance of the wallet that signs in. Free: 30 requests per minute per IP. Holder (300,000 Rialto): 120 per minute and `hood_portfolio` / `GET /api/portfolio/{address}`. Pro (1,000,000 Rialto): 600 per minute and `hood_batch` / `POST /api/batch`.
+## Facts the code relies on
 
-```
-rialto access            # tier and Rialto balance of this wallet
-rialto access 0x...      # tier of any address
-rialto access sign       # 24 hour token; paste mcpUrl into an MCP client or send x-rialto-auth
-```
+- Venice x402 (verified against api.venice.ai on 2026-11-13): prepaid USD ledger per wallet, top-up in USDC on Solana mainnet (`solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp`), minimum 5 USD. Sign-in header `SIGN-IN-WITH-X`: Venice lists `ed25519` on Solana among its supported sign-in types; the kit signs the CAIP-122 message for Solana, base58 signature, random nonce, 5-minute expiry.
+- x402 `exact` on Solana: a versioned transaction with exactly three instructions (compute-unit limit, compute-unit price, one `transferChecked` of USDC), fee payer = the facilitator named in `extra.feePayer`.
+- Holder counts come from `getProgramAccounts` on the token program filtered by mint, empty accounts dropped, grouped by owner. Public RPC endpoints may refuse or throttle it.
 
-MCP tools: `rialto_access`, `rialto_access_sign`. Signing costs nothing and moves nothing.
+## First chain
 
-## Live feeds
-
-```
-rialto transfers -n 150     # USDG transfers in the last 150 blocks, from the chain logs
-rialto trades NVDA          # recent trades on the NVDA / USDG pool; RIALTO by default
-rialto check 0x…            # token check: identity, supply, age, holders, concentration, liquidity, flags
-rialto token                # Rialto price, FDV, liquidity, 24h volume, volume since launch across every pool
-rialto burns                # every burn of the Rialto token, running total, percent of supply
-rialto holders -n 10        # holder count, top holders, concentration, and the block the figures are current to
-rialto watch                # follow the chain live: blocks, USDG flow, Rialto trades, burns, this wallet's balances and rank
-rialto watch -w 0x… --json  # watch another wallet; one JSON object per event, for scripts and agents
-rialto watch --only burn,rank --webhook <url> [--discord]  # filter event types, POST each one to a webhook
-rialto watch --only trade --min-usd 500 --format slack --webhook <url>  # whale trades only; formats: raw, discord, slack
-rialto compare <a> <b>      # two wallets side by side on the ledger
-rialto export burns --csv   # holders | leaderboard | burns | history as JSON (default) or CSV, -o file
-rialto sol init | status | config mint <addr> | token | holders | burns | trades | send <to> <amount> --yes   # Rialto on Solana
-rialto sol fund 5 | pay <url> | burn <amount> --yes | stock AAPLx | watch   # Venice top-up from Solana USDC, x402 in USDC, burn, xStocks, live
-rialto sol receipts [-n 20] [--since <date>] [--json]   # every payment this kit signed, from ~/.rialto/receipts.jsonl: totals, by host, signatures
-rialto history              # growth day by day since launch, and who holds how much by tier
-rialto vitals               # measured chain vitals: blocks per second, block time, fee of one transfer
-rialto rank [address]       # where a wallet stands: rank, wallet number since launch, days held, never sold, day one, badge
-rialto leaderboard [-n 25]  # top holders with rank and first day; diamond hands, day-one still holding, exited, median
-rialto badge [address]      # badge URL, Markdown for a README, the SVG (-o file.svg)
-rialto share [address]      # share text and X post link for a wallet (--open)
-```
-
-MCP tools: `hood_usdg_transfers`, `hood_recent_trades`. Hosted equivalents: https://rialto.casa/api/live/transfers, /api/live/trades?token=NVDA, /api/live/pulse, and the live page https://rialto.casa/live.
-
-## Pay per call and the flywheel
-
-rialto.casa sells its tools over x402 in USDG on Robinhood Chain. Pay with the wallet, no tier needed:
-
-```
-rialto pay https://rialto.casa/x402/check/0xe0fb5d77c627ba9c7950fc0d62d1d96603e7b7c6 --max 0.05
-rialto pay https://rialto.casa/x402/pulse --max 0.05
-rialto pay https://rialto.casa/x402/pulse --burn   # pay in Rialto: burns the price, the tx is the receipt
-rialto flywheel               # revenue received, Rialto bought back and burned
-rialto burn 10000 --yes       # IRREVERSIBLE: 10,000 Rialto to the dead address = 24 h of Pro for this wallet
-```
-
-MCP tools: `rialto_flywheel`, `rialto_burn` (confirm with the user before calling).
-
-On rialto.casa the kit signs you in automatically, so a Holder wallet pays 50% and a Pro wallet 25% of the list price on the paid lane.
+The kit started on an EVM network (chain id 4663) and still ships those commands under their original names (`status`, `pay`, `fund`, `bridge`, `token`, `holders`, `watch`, ...). `rialto --help` lists them. The project lives on Solana now.

@@ -6,6 +6,8 @@ import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 export type RialtoConfig = {
   privateKey?: `0x${string}`;
   veniceApiKey?: string;
+  /** Which wallet signs in to Venice: "solana" (default when a Solana key exists) or "evm". */
+  veniceWallet?: "solana" | "evm";
   defaultModel?: string;
   /** Hard ceiling, in USD, for a single `rialto agent` run. */
   agentBudgetUsd?: number;
@@ -60,6 +62,7 @@ export function resolveConfig(): RialtoConfig & { defaultModel: string; agentBud
     ...file,
     privateKey: envKey ?? file.privateKey,
     veniceApiKey: process.env.VENICE_API_KEY ?? file.veniceApiKey,
+    veniceWallet: (process.env.RIALTO_VENICE_WALLET as "solana" | "evm" | undefined) ?? file.veniceWallet,
     defaultModel: process.env.RIALTO_MODEL ?? file.defaultModel ?? DEFAULTS.defaultModel,
     agentBudgetUsd: Number(process.env.RIALTO_AGENT_BUDGET_USD ?? file.agentBudgetUsd ?? DEFAULTS.agentBudgetUsd),
     maxPaymentUsdg: Number(process.env.RIALTO_MAX_PAYMENT_USDG ?? file.maxPaymentUsdg ?? DEFAULTS.maxPaymentUsdg),

@@ -13,7 +13,7 @@ import { CONFIG_PATH, ensureWallet, readConfig, resolveConfig, writeConfig } fro
 import { analyzeWallet, balances, chainStatus, sendUsdg } from "./hood.js";
 import { serveStdio } from "./mcp.js";
 import { findStock, stockPrice, topPools, STOCK_REGISTRY } from "./stocks.js";
-import { balance as veniceBalance, chat, listModels, topUp, transactions, webSearch } from "./venice.js";
+import { balance as veniceBalance, chat, listModels, topUp, transactions, veniceAuth, webSearch } from "./venice.js";
 import { getAccount } from "./wallet.js";
 import { payFetch } from "./x402.js";
 import { burnSpl, ensureSolanaWallet, getSolanaKeypair, sendSol, sendSpl, solBurns, solHolders, solStatus, solStock, solToken, solTrades, SOLANA_RPC } from "./solana.js";
@@ -24,7 +24,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const pkg = JSON.parse(readFileSync(join(here, "..", "package.json"), "utf8")) as { version: string };
 
 const program = new Command();
-program.name("rialto").description("Venice AI agent kit for Robinhood Chain. Pay in USDG, think with Venice.").version(pkg.version);
+program.name("rialto").description("Venice AI agent kit on Solana. Pay in USDC, think with Venice. `rialto sol --help` for the Solana side.").version(pkg.version);
 
 const out = (v: unknown) => console.log(typeof v === "string" ? v : JSON.stringify(v, null, 2));
 const fail = (e: unknown) => {
@@ -466,10 +466,23 @@ sol
   });
 sol
   .command("status [address]")
-  .description("SOL, USDC and Rialto balances of an address (default: this Solana wallet), current slot")
+  .description("SOL, USDC and Rialto balances of an address (default: this Solana wallet, with its Venice credit), current slot")
   .action(async (address: string | undefined) => {
     try {
-      out(await solStatus(address));
+      const status = await solStatus(address);
+      if (!address) {
+        // Same keypair signs in to Venice: show the credit it holds there, best effort.
+        try {
+          const auth = veniceAuth();
+          if (auth.kind === "solana") {
+            const b = await veniceBalance(auth);
+            return out({ ...status, venice: { signsInAs: b.walletAddress, balanceUsd: b.balanceUsd, canConsume: b.canConsume } });
+          }
+        } catch {
+          /* Venice unreachable or another auth mode: chain status alone */
+        }
+      }
+      out(status);
     } catch (e) {
       fail(e);
     }
@@ -814,7 +827,7 @@ program
 const venice = program.command("venice").description("Venice AI");
 venice
   .command("balance")
-  .description("Venice credit balance for the wallet")
+  .description("Venice credit balance of the wallet that signs in (the Solana keypair by default)")
   .action(async () => {
     try {
       out(await veniceBalance());
@@ -919,7 +932,7 @@ program
 
 program
   .command("config [key] [value]")
-  .description("Read or write config (defaultModel, agentBudgetUsd, maxPaymentUsdg, dailyLimitUsd, payAllowlist, toolCaps, veniceApiKey). `rialto config dailyLimitUsd off` removes the daily limit")
+  .description("Read or write config (defaultModel, agentBudgetUsd, maxPaymentUsdg, dailyLimitUsd, payAllowlist, toolCaps, veniceWallet, veniceApiKey). `rialto config dailyLimitUsd off` removes the daily limit")
   .action((key?: string, value?: string) => {
     const cfg = readConfig();
     if (!key) return out({ ...cfg, privateKey: cfg.privateKey ? "(set)" : undefined, veniceApiKey: cfg.veniceApiKey ? "(set)" : undefined });
@@ -930,6 +943,7 @@ program
       return out("removed dailyLimitUsd");
     }
     if (key === "dailyLimitUsd" && !/^\d+(\.\d+)?$/.test(value)) return fail(new Error("dailyLimitUsd must be a number of USDC, or off"));
+    if (key === "veniceWallet" && value !== "solana" && value !== "evm") return fail(new Error("veniceWallet must be solana or evm"));
     const parsed = key === "payAllowlist" ? value.split(",").map((s) => s.trim()).filter(Boolean) : key === "toolCaps" ? parseToolCaps(value) : /^\d+(\.\d+)?$/.test(value) ? Number(value) : value;
     writeConfig({ ...cfg, [key]: parsed });
     out(`set ${key}`);

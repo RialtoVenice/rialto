@@ -9,7 +9,7 @@ The name is the bridge. In Venice, the Rialto crosses the Grand Canal. Here it c
 The package is not on npm yet. Install the hosted tarball, or build from this folder.
 
 ```bash
-npm i -g https://rialto.casa/downloads/rialto-kit-0.13.0.tgz
+npm i -g https://rialto.casa/downloads/rialto-kit-0.14.0.tgz
 rialto sol init                  # creates the Solana keypair in ~/.rialto/config.json (mode 600)
 ```
 
@@ -21,10 +21,10 @@ npm run build
 npm link                         # or: node bin/rialto.js <command>
 ```
 
-Send a few USDC and a little SOL to the printed address, then:
+Send a few USDC to the printed address (a little SOL only for `sol send` and `sol burn`), then:
 
 ```bash
-rialto sol status                # SOL, USDC and Rialto balances, current slot
+rialto sol status                # SOL, USDC and Rialto balances, Venice credit, current slot
 rialto sol fund 5                # Venice top-up straight from Solana USDC (Venice minimum: 5)
 rialto chat "What does the Rialto mint look like right now?"
 rialto agent "Compare AAPLx, TSLAx and NVDAx on Solana and tell me which pool is deepest" -b 0.25 --cap sol_pay=0.05 --cap venice=0.10
@@ -37,7 +37,7 @@ rialto mcp                       # MCP server on stdio for Claude, Cursor, Herme
 | Command | What it does |
 |---|---|
 | `rialto sol init` | Create or show the Solana keypair. The secret never leaves the config file. |
-| `rialto sol status [address]` | SOL, USDC and Rialto balances, current slot. |
+| `rialto sol status [address]` | SOL, USDC and Rialto balances, current slot; for this wallet, its Venice credit too. |
 | `rialto sol config mint <address>` | Set the Rialto mint used by default. |
 | `rialto sol token [mint]` | Mint facts: supply, decimals, mint and freeze authorities, burn since launch (1B created minus supply), 20 largest accounts with owners, price and pool. |
 | `rialto sol holders [mint] -n 20` | Holders: full scan when the RPC allows `getProgramAccounts`, else the 20 largest with `complete: false`. |
@@ -56,13 +56,19 @@ Venice and the agent:
 | Command | What it does |
 |---|---|
 | `rialto chat "<prompt>" [--web] [-m model]` | Ask a Venice model, paid from the wallet's Venice credit. |
-| `rialto agent "<goal>" -b <usd> [--cap tool=usd ...]` | Budgeted reference agent with Solana tools and x402 payments. |
-| `rialto venice balance` / `ledger` / `models` / `search "<q>"` | Venice account and private web search. |
+| `rialto agent "<goal>" -b <usd> [--cap tool=usd ...] [-s 8]` | Budgeted reference agent with Solana tools and x402 payments. Stops on an answer, on the budget, or at step 8. |
+| `rialto venice balance` / `ledger` / `models` / `search "<q>"` | Venice credit of the wallet that signs in, ledger, models, private web search. |
 | `rialto mcp` | MCP server on stdio. |
 | `rialto skill` | Print SKILL.md for coding agents. |
 | `rialto config [key] [value]` | Read or write the config file. |
 
 The CLI also keeps the commands of the kit's first chain, an EVM network (chain id 4663), under their original names (`status`, `pay`, `fund`, `bridge`, `token`, `holders`, `watch`, ...). `rialto --help` lists them. The Solana side is where the project lives now.
+
+## One keypair, end to end
+
+Venice keeps a prepaid ledger per wallet and lists two sign-in types in its 402: `eip191` on an EVM chain and `ed25519` on Solana. The kit signs in with the Solana keypair: the CAIP-122 sign-in message for Solana, random nonce, 5-minute expiry, bound to the URL being called, signed with the same ed25519 key that holds the USDC. `rialto sol fund` pays from that keypair and `rialto chat` / `rialto agent` spend as that keypair, so a Solana-only install needs no second key.
+
+An install that holds Venice credit on its EVM wallet keeps it with `rialto config veniceWallet evm`. With no Solana key the kit signs in with the EVM key as before.
 
 ## Money guards
 
@@ -71,8 +77,8 @@ All enforced locally, before any signature:
 | Guard | Scope | Where |
 |---|---|---|
 | `agentBudgetUsd` (`-b`) | One `rialto agent` run: inference plus every payment, measured from Venice's `X-Balance-Remaining` header | `agent.ts` |
-| `toolCaps` (`--cap tool=usd`) | One tool inside a run. `sol_pay` is refused once its cap is spent and the remaining cap becomes the ceiling of the next payment. `venice` stops inference at its cap. | `agent.ts` |
-| `maxPaymentUsdg` (`--max`) | One x402 payment | `solpay.ts` |
+| `toolCaps` (`--cap tool=usd`) | One tool inside a run. `sol_pay` is refused once its cap is spent. `venice` stops inference at its cap. | `agent.ts` |
+| `maxPaymentUsdg` (`--max`) | One x402 payment. A per-tool cap never loosens it: the payer applies the tighter of the two, this ceiling or what is left on the cap. | `solpay.ts` |
 | `dailyLimitUsd` | Every x402 payment signed in one UTC day, across runs, the CLI and the MCP server. Checked against the receipts ledger; a payment that would cross it is refused before signing. Failed payments count: a signature is a commitment. | `solpay.ts`, `receipts.ts` |
 | `payAllowlist` | Hosts the payer may pay | `solpay.ts` |
 
@@ -89,6 +95,7 @@ Every payment the kit signs (x402 on Solana, Venice top-ups) is appended to `~/.
 | `solanaSecret` | `SOLANA_SECRET_KEY` | generated by `sol init` | The Solana keypair |
 | `solanaMint` | `RIALTO_SOLANA_MINT` | the Rialto mint | Mint used by default |
 | | `SOLANA_RPC_URL` | public RPC | Private RPC for full holder scans and burn history |
+| `veniceWallet` | `RIALTO_VENICE_WALLET` | `solana` when a Solana key exists | Which wallet signs in to Venice: `solana` or `evm` |
 | `veniceApiKey` | `VENICE_API_KEY` | unset | Use an API key instead of the wallet ledger |
 | `defaultModel` | `RIALTO_MODEL` | `zai-org-glm-5-2` | Venice model |
 | `agentBudgetUsd` | `RIALTO_AGENT_BUDGET_USD` | `1` | Hard cap per agent run |
@@ -114,7 +121,7 @@ Hosted, read-only, no install: `https://rialto.casa/mcp` (Streamable HTTP, state
 | `solana.ts` | Keypair, balances, mint facts, holders, burns, trades, xStocks, transfers |
 | `solpay.ts` | x402 payer for Solana (`exact` scheme, USDC), ceiling and allowlist, Venice top-up |
 | `receipts.ts` | Local ledger of every payment signed, and its summary |
-| `venice.ts` | `SIGN-IN-WITH-X` auth, chat with tools, balance, ledger, models, web search |
+| `venice.ts` | `SIGN-IN-WITH-X` auth (ed25519 with the Solana keypair, EIP-191 as fallback), chat with tools, balance, ledger, models, web search |
 | `agent.ts` | Budgeted reference agent: Venice function calling, per-tool caps, Solana tools |
 | `mcp.ts` | MCP server (stdio) exposing everything |
 | `cli.ts` | The `rialto` command |

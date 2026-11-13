@@ -1,6 +1,6 @@
 # Built in Venice listing for Rialto (content/projects/rialto.yaml)
 title: Rialto
-description: Venice AI agent kit for Robinhood Chain. A wallet-native CLI, MCP server and budgeted reference agent that pay x402 endpoints in USDG and fund Venice inference from the same wallet.
+description: Venice AI agent kit on Solana. A wallet-native CLI, MCP server and budgeted reference agent that pay x402 endpoints in USDC and fund Venice inference from the same Solana keypair, signed in with ed25519. No API key, every spend capped in code before anything is signed. Open source.
 url: https://rialto.casa
 type: website
 category: ecosystem
@@ -8,9 +8,10 @@ tags:
   - MCP
   - x402
   - Agent
-  - Robinhood Chain
+  - Solana
 submittedBy: RialtoVenice
 socials:
   website: https://rialto.casa
   x: https://x.com/RialtoVenice
+  github: https://github.com/RialtoVenice/rialto
 thumbnail: https://rialto.casa/assets/cover-scene-1600.jpg

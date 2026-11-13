@@ -62,7 +62,16 @@ export async function signSolanaPayment(req: SolRequirement, x402Version: number
   return { header: Buffer.from(JSON.stringify(body)).toString("base64"), amount };
 }
 
-export type SolPayOptions = { method?: string; body?: string; headers?: Record<string, string>; maxUsdc?: number; dryRun?: boolean };
+export type SolPayOptions = {
+  method?: string;
+  body?: string;
+  headers?: Record<string, string>;
+  /** Per-payment ceiling for this call; replaces config maxPaymentUsdg (the CLI's --max). */
+  maxUsdc?: number;
+  /** What is left on a per-tool cap for the run. It can only tighten the ceiling, never loosen it. */
+  capLeftUsdc?: number;
+  dryRun?: boolean;
+};
 
 /** Fetch a URL and pay in USDC on Solana if it answers 402 with a Solana option. Same ceiling and allowlist as the USDG payer. */
 export async function payFetchSolana(url: string, opts: SolPayOptions = {}): Promise<{ response: Response; receipt?: PaymentReceipt; requirement?: PaymentRequirement; text: string }> {
@@ -80,8 +89,14 @@ export async function payFetchSolana(url: string, opts: SolPayOptions = {}): Pro
   if (!req) throw new Error(`No USDC-on-Solana option offered. Endpoint accepts: ${required.accepts.map((a) => `${a.network}/${a.asset}`).join(", ") || "nothing readable"}.`);
   const amount = Number(req.amount ?? req.maxAmountRequired ?? "0") / 1e6;
   if (opts.dryRun) return { response: first, text: firstText, requirement: req };
-  const ceiling = opts.maxUsdc ?? cfg.maxPaymentUsdg;
-  if (amount > ceiling) throw new Error(`Endpoint asks ${amount} USDC, above the ${ceiling} ceiling. Raise maxPaymentUsdg to allow it.`);
+  // Two locks, the tighter one wins: the per-payment ceiling and what is left on the tool's cap for this run.
+  const perPayment = opts.maxUsdc ?? cfg.maxPaymentUsdg;
+  const capLeft = opts.capLeftUsdc !== undefined ? Math.max(0, Math.round(opts.capLeftUsdc * 1e6) / 1e6) : undefined;
+  const ceiling = capLeft !== undefined ? Math.min(perPayment, capLeft) : perPayment;
+  if (amount > ceiling) {
+    if (capLeft !== undefined && capLeft < perPayment) throw new Error(`Endpoint asks ${amount} USDC, above the ${capLeft} left on this tool's cap for the run. Not paying.`);
+    throw new Error(`Endpoint asks ${amount} USDC, above the ${ceiling} ceiling. Raise maxPaymentUsdg to allow it.`);
+  }
   if (cfg.dailyLimitUsd !== undefined) {
     // Checked against the receipts ledger, so the limit holds across runs, the CLI and the MCP server alike.
     const signed = signedTodayUsdc();
